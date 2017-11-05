@@ -1,8 +1,12 @@
 var body = $(document.body);
 var canvas = null;
 var mainCtx = null;
-var gx, gy, zoom, gridSpacing;
+var gx, gy, zoom, gridSpacing, subDiv;
 var gridCo = "#bbf";
+
+var axisWeight = 3;
+var gridWeight = 1.5;
+var subWeight  = 0.5;
 
 var resizeCanvas = function() {
   canvas[0].width = window.innerWidth - 10;
@@ -12,33 +16,35 @@ var resizeCanvas = function() {
 }
 
 var drawGrid = function(ctx) {
-  var xOff = gx % gridSpacing;
-  var yOff = gy % gridSpacing;
-  var xNum = Math.ceil(ctx.canvas.width  / gridSpacing);
-  var yNum = Math.ceil(ctx.canvas.height / gridSpacing);
+  var xOff = gx % (gridSpacing / subDiv);
+  var yOff = gy % (gridSpacing / subDiv);
+  var xNum = Math.ceil(ctx.canvas.width  / (gridSpacing / subDiv));
+  var yNum = Math.ceil(ctx.canvas.height / (gridSpacing / subDiv));
   ctx.setStyle(gridCo, 1);
   for (var i = 0; i < xNum; i++) {
-    var x = xOff + i * gridSpacing; 
+    var x = xOff + i * (gridSpacing / subDiv);
     if (x == gx) {
-      ctx.line(x,0,x,ctx.canvas.height,gridCo,3);
-      ctx.setStyle(gridCo, 1);
+      ctx.line(x,0,x,ctx.canvas.height,gridCo,axisWeight);
+    } else if ((x-gx) % gridSpacing == 0) {
+      ctx.line(x,0,x,ctx.canvas.height,gridCo,gridWeight);
     } else {
-      ctx.line(x,0,x,ctx.canvas.height);
+      ctx.line(x,0,x,ctx.canvas.height,gridCo,subWeight);
     }
   }
   for (var i = 0; i < yNum; i++) {
-    var y = yOff + i * gridSpacing; 
+    var y = yOff + i * (gridSpacing / subDiv);
     if (y == gy) {
-      ctx.line(0,y,ctx.canvas.width,y,gridCo,3);
-      ctx.setStyle(gridCo, 1);
+      ctx.line(0,y,ctx.canvas.width,y,gridCo,axisWeight);
+    } else if ((y-gy) % gridSpacing == 0) {
+      ctx.line(0,y,ctx.canvas.width,y,gridCo,gridWeight);
     } else {
-      ctx.line(x,0,x,ctx.canvas.height);
-      ctx.line(0,y,ctx.canvas.width,y);
+      ctx.line(0,y,ctx.canvas.width,y,gridCo,subWeight);
     }
   }
 }
 
 var canvasMouse = function(event) {
+  return;
   gx = event.pageX;
   gy = event.pageY;
   mainCtx.clear();
@@ -53,7 +59,8 @@ var injectCanvas = function() {
   gx = canvas[0].width  / 2;
   gy = canvas[0].height / 2;
   zoom = 1.0;
-  gridSpacing = 25;
+  gridSpacing = 100;
+  subDiv = 4;
   body.append(canvas);
   drawGrid(mainCtx);
 }
