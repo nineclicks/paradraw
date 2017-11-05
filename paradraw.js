@@ -25,26 +25,26 @@ var resizeCanvas = function() {
 }
 
 var drawGrid = function(ctx) {
-  var xOff = gx % (gridSpacing / subDiv);
-  var yOff = gy % (gridSpacing / subDiv);
-  var xNum = Math.ceil(ctx.canvas.width  / (gridSpacing / subDiv));
-  var yNum = Math.ceil(ctx.canvas.height / (gridSpacing / subDiv));
+  var xOff = gx % (gridSpacing / subDiv / zoom);
+  var yOff = gy % (gridSpacing / subDiv / zoom);
+  var xNum = Math.ceil(ctx.canvas.width  / (gridSpacing / subDiv / zoom));
+  var yNum = Math.ceil(ctx.canvas.height / (gridSpacing / subDiv / zoom));
   ctx.setStyle(gridCo, 1);
   for (var i = 0; i < xNum; i++) {
-    var x = xOff + i * (gridSpacing / subDiv);
+    var x = xOff + i * (gridSpacing / subDiv / zoom);
     if (x == gx) {
       ctx.line(x,0,x,ctx.canvas.height,gridCo,axisWeight);
-    } else if ((x-gx) % gridSpacing == 0) {
+    } else if ((x-gx) % (gridSpacing / zoom) == 0) {
       ctx.line(x,0,x,ctx.canvas.height,gridCo,gridWeight);
     } else {
       ctx.line(x,0,x,ctx.canvas.height,gridCo,subWeight);
     }
   }
   for (var i = 0; i < yNum; i++) {
-    var y = yOff + i * (gridSpacing / subDiv);
+    var y = yOff + i * (gridSpacing / subDiv / zoom);
     if (y == gy) {
       ctx.line(0,y,ctx.canvas.width,y,gridCo,axisWeight);
-    } else if ((y-gy) % gridSpacing == 0) {
+    } else if ((y-gy) % (gridSpacing / zoom) == 0) {
       ctx.line(0,y,ctx.canvas.width,y,gridCo,gridWeight);
     } else {
       ctx.line(0,y,ctx.canvas.width,y,gridCo,subWeight);
@@ -58,6 +58,12 @@ var canvasMouse = function(event) {
     gy = event.pageY - mouse.startY;
     mainCtx.clear();
     drawGrid(mainCtx);
+  } else if (mouse.mode == "zoom") {
+    var zChange = mouse.startY - event.pageY;
+    zoom *= (1 + (zChange / 100.0));
+    mouse.startY = event.pageY;
+    mainCtx.clear();
+    drawGrid(mainCtx);
   }
 }
 
@@ -67,7 +73,8 @@ var canvasDown = function(event) {
     mouse.startY = event.pageY - gy;
     mouse.mode = "scroll";
   } else if (event.shiftKey) {
-
+    mouse.startY = event.pageY;
+    mouse.mode = "zoom";
   }
 }
 
