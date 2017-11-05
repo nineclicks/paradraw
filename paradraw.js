@@ -1,18 +1,27 @@
 var body = $(document.body);
 var canvas = null;
 var mainCtx = null;
-var gx, gy, zoom, gridSpacing, subDiv;
-var gridCo = "#bbf";
+var gx, gy
+var zoom        = 1.0;
+var gridSpacing = 100;
+var subDiv      = 4;
+var gridCo      = "#bbf";
 
 var axisWeight = 3;
 var gridWeight = 1.5;
 var subWeight  = 0.5;
 
+var mouse = {
+  "mode" :   "none",
+  "startX" : 0,
+  "startY" : 0
+};
+
 var resizeCanvas = function() {
   canvas[0].width = window.innerWidth - 10;
   canvas[0].height = window.innerHeight - 10;
-  mainCtx.fillStyle = "#fff";
-  mainCtx.fillRect(0, 0, canvas[0].width, canvas[0].height);
+  mainCtx.clear();
+  drawGrid(mainCtx);
 }
 
 var drawGrid = function(ctx) {
@@ -44,23 +53,37 @@ var drawGrid = function(ctx) {
 }
 
 var canvasMouse = function(event) {
-  return;
-  gx = event.pageX;
-  gy = event.pageY;
-  mainCtx.clear();
-  drawGrid(mainCtx);
+  if (mouse.mode == "scroll") {
+    gx = event.pageX - mouse.startX;
+    gy = event.pageY - mouse.startY;
+    mainCtx.clear();
+    drawGrid(mainCtx);
+  }
+}
+
+var canvasDown = function(event) {
+  if (event.ctrlKey) {
+    mouse.startX = event.pageX - gx;
+    mouse.startY = event.pageY - gy;
+    mouse.mode = "scroll";
+  } else if (event.shiftKey) {
+
+  }
+}
+
+var canvasUp = function(event) {
+  mouse.mode = "none";
 }
 
 var injectCanvas = function() {
   canvas = $('<canvas id="canvas" class="mainCanvas"/>');
   canvas.mousemove(canvasMouse);
+  canvas.mousedown(canvasDown);
+  canvas.mouseup(canvasUp);
   mainCtx = canvas[0].getContext("2d");
   resizeCanvas();
   gx = canvas[0].width  / 2;
   gy = canvas[0].height / 2;
-  zoom = 1.0;
-  gridSpacing = 100;
-  subDiv = 4;
   body.append(canvas);
   drawGrid(mainCtx);
 }
