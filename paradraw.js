@@ -6,7 +6,8 @@ var zoom        = 1.0;
 var gridSpacing = 100;
 var subDiv      = 5;
 var gridDivider = 1.0;
-var gridCo      = "#bbf";
+var gridDark    = "#99f";
+var gridLight   = "#99f";
 
 var axisWeight = 3;
 var gridWeight = 1.5;
@@ -26,30 +27,39 @@ var resizeCanvas = function() {
 }
 
 var drawGrid = function(ctx) {
-  var xOff = gx % (gridSpacing / subDiv / zoom * gridDivider);
-  var yOff = gy % (gridSpacing / subDiv / zoom * gridDivider);
-  var xNum = Math.ceil(ctx.canvas.width  / (gridSpacing / subDiv / zoom * gridDivider));
-  var yNum = Math.ceil(ctx.canvas.height / (gridSpacing / subDiv / zoom * gridDivider));
-  ctx.setStyle(gridCo, 1);
-  for (var i = 0; i < xNum; i++) {
-    var x = xOff + i * (gridSpacing / subDiv / zoom * gridDivider);
-    if (x == gx) {
-      ctx.line(x,0,x,ctx.canvas.height,gridCo,axisWeight);
-    } else if ((x-gx) % (gridSpacing / zoom * gridDivider) == 0) {
-      ctx.line(x,0,x,ctx.canvas.height,gridCo,gridWeight);
+  var gridDivPx = gridSpacing / subDiv / zoom * gridDivider;
+  var xOffset = gx % gridDivPx;
+  var xStart  = Math.ceil(-gx / gridDivPx);
+  var yOffset = gy % gridDivPx;
+  var yStart  = Math.ceil(-gy / gridDivPx);
+  console.log(xOffset);
+
+  for (var i = 0; i * gridDivPx < canvas[0].width; i++) {
+    var div = xStart + i;
+    var weight = 1;
+    var x = xOffset + i * gridDivPx;
+    if (div == 0) {
+      weight = axisWeight;
+    } else if (div % subDiv == 0) {
+      weight = gridWeight;
     } else {
-      ctx.line(x,0,x,ctx.canvas.height,gridCo,subWeight);
+      weight = subWeight;
     }
+    ctx.line(x,0,x,ctx.canvas.height,gridLight,weight);
   }
-  for (var i = 0; i < yNum; i++) {
-    var y = yOff + i * (gridSpacing / subDiv / zoom * gridDivider);
-    if (y == gy) {
-      ctx.line(0,y,ctx.canvas.width,y,gridCo,axisWeight);
-    } else if ((y-gy) % (gridSpacing / zoom * gridDivider) == 0) {
-      ctx.line(0,y,ctx.canvas.width,y,gridCo,gridWeight);
+
+  for (var i = 0; i * gridDivPx < canvas[0].height; i++) {
+    var div = yStart + i;
+    var weight = 1;
+    var y = yOffset + i * gridDivPx;
+    if (div == 0) {
+      weight = axisWeight;
+    } else if (div % subDiv == 0) {
+      weight = gridWeight;
     } else {
-      ctx.line(0,y,ctx.canvas.width,y,gridCo,subWeight);
+      weight = subWeight;
     }
+    ctx.line(0,y,ctx.canvas.width,y,gridLight,weight);
   }
 }
 
@@ -113,8 +123,8 @@ CanvasRenderingContext2D.prototype.line = function(x1,y1,x2,y2,color,weight) {
     this.strokeStyle=color;
   }
   this.beginPath();
-  this.moveTo(x1,y1);
-  this.lineTo(x2,y2);
+  this.moveTo(Math.round(x1),Math.round(y1));
+  this.lineTo(Math.round(x2),Math.round(y2));
   this.stroke();
 }
 
