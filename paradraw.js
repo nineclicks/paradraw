@@ -4,7 +4,8 @@ var mainCtx = null;
 var gx, gy
 var zoom        = 1.0;
 var gridSpacing = 100;
-var subDiv      = 4;
+var subDiv      = 5;
+var gridDivider = 1.0;
 var gridCo      = "#bbf";
 
 var axisWeight = 3;
@@ -25,26 +26,26 @@ var resizeCanvas = function() {
 }
 
 var drawGrid = function(ctx) {
-  var xOff = gx % (gridSpacing / subDiv / zoom);
-  var yOff = gy % (gridSpacing / subDiv / zoom);
-  var xNum = Math.ceil(ctx.canvas.width  / (gridSpacing / subDiv / zoom));
-  var yNum = Math.ceil(ctx.canvas.height / (gridSpacing / subDiv / zoom));
+  var xOff = gx % (gridSpacing / subDiv / zoom * gridDivider);
+  var yOff = gy % (gridSpacing / subDiv / zoom * gridDivider);
+  var xNum = Math.ceil(ctx.canvas.width  / (gridSpacing / subDiv / zoom * gridDivider));
+  var yNum = Math.ceil(ctx.canvas.height / (gridSpacing / subDiv / zoom * gridDivider));
   ctx.setStyle(gridCo, 1);
   for (var i = 0; i < xNum; i++) {
-    var x = xOff + i * (gridSpacing / subDiv / zoom);
+    var x = xOff + i * (gridSpacing / subDiv / zoom * gridDivider);
     if (x == gx) {
       ctx.line(x,0,x,ctx.canvas.height,gridCo,axisWeight);
-    } else if ((x-gx) % (gridSpacing / zoom) == 0) {
+    } else if ((x-gx) % (gridSpacing / zoom * gridDivider) == 0) {
       ctx.line(x,0,x,ctx.canvas.height,gridCo,gridWeight);
     } else {
       ctx.line(x,0,x,ctx.canvas.height,gridCo,subWeight);
     }
   }
   for (var i = 0; i < yNum; i++) {
-    var y = yOff + i * (gridSpacing / subDiv / zoom);
+    var y = yOff + i * (gridSpacing / subDiv / zoom * gridDivider);
     if (y == gy) {
       ctx.line(0,y,ctx.canvas.width,y,gridCo,axisWeight);
-    } else if ((y-gy) % (gridSpacing / zoom) == 0) {
+    } else if ((y-gy) % (gridSpacing / zoom * gridDivider) == 0) {
       ctx.line(0,y,ctx.canvas.width,y,gridCo,gridWeight);
     } else {
       ctx.line(0,y,ctx.canvas.width,y,gridCo,subWeight);
@@ -60,11 +61,20 @@ var canvasMouse = function(event) {
     drawGrid(mainCtx);
   } else if (mouse.mode == "zoom") {
     var zChange = mouse.startY - event.pageY;
-    zoom *= (1 + (zChange / 100.0));
     mouse.startY = event.pageY;
-    mainCtx.clear();
-    drawGrid(mainCtx);
+    changeZoom(zChange);
   }
+}
+
+var changeZoom = function(change) {
+  zoom *= (1 + (change / 100.0));
+  gridDivider = 1.0;
+  while (gridSpacing / subDiv / zoom * gridDivider < 10.0) {
+    gridDivider *= 10;
+  }
+  console.log(gridDivider);
+  mainCtx.clear();
+  drawGrid(mainCtx);
 }
 
 var canvasDown = function(event) {
