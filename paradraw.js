@@ -32,7 +32,8 @@ var drawGrid = function(ctx) {
   var xStart  = Math.ceil(-gx / gridDivPx);
   var yOffset = gy % gridDivPx;
   var yStart  = Math.ceil(-gy / gridDivPx);
-  console.log(xOffset);
+  if (xStart > 0) xStart--;
+  if (yStart > 0) yStart--;
 
   for (var i = 0; i * gridDivPx < canvas[0].width; i++) {
     var div = xStart + i;
