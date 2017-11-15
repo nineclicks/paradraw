@@ -29,10 +29,9 @@ var resizeCanvas = function() {
 var drawGrid = function(ctx) {
   var gridDivPx = gridSpacing / subDiv / zoom * gridDivider;
   var xOffset = gx % gridDivPx;
-  var xStart  = Math.ceil(-gx / gridDivPx);
+  var xStart  = Math.trunc(-gx / gridDivPx);
   var yOffset = gy % gridDivPx;
-  var yStart  = Math.ceil(-gy / gridDivPx);
-  if (xStart > 0) xStart--;
+  var yStart  = Math.trunc(-gy / gridDivPx);
   if (yStart > 0) yStart--;
 
   for (var i = 0; i * gridDivPx < canvas[0].width; i++) {
