@@ -1,24 +1,93 @@
+class Grid {
+  constructor() {
+    this.spacing = 100;
+    this.subDiv = 5;
+    this.gridDiv = 1;
+    this.color = "#99f";
+    this.axisWeight = 3;
+    this.weight = 1.5;
+    this.subWeight = 0.5;
+  }
+}
+
+class Graph {
+  constructor(ctx, x, y) {
+    this.ctx = ctx;
+    this.x = x;
+    this.y = y;
+    this.zoom = 1.0;
+    this.grid = new Grid();
+    this.unit = 10;
+  }
+
+  changeZoom(change, x, y) {
+    if (x == null || y == null) {
+      x = 0;
+      y = 0;
+    }
+    var currentGraphCoords = this.getTranslatedCoords(x, y);
+    var currentPixelCoords = [x, y];
+    this.zoom *= (1 + (change / 100.0));
+    this.grid.gridDiv = 1.0;
+    while (this.grid.spacing / this.grid.subDiv / this.zoom * this.grid.gridDiv < 10.0) {
+      this.grid.gridDiv *= 10;
+    }
+    var newGraphCoords = this.getTranslatedCoords(x, y);
+    var graphCoordDiff = vSub(currentGraphCoords, newGraphCoords);
+    var graphCoordDiffScaled = vMult(graphCoordDiff, this.unit / this.zoom);
+    this.x = this.x - graphCoordDiffScaled[0];
+    this.y = this.y + graphCoordDiffScaled[1];
+    this.draw();
+  }
+
+  draw() {
+    this.ctx.clear();
+    var griddivpx = this.grid.spacing / this.grid.subDiv / this.zoom * this.grid.gridDiv;
+    var xoffset = this.x % griddivpx;
+    var xstart  = Math.trunc(-this.x / griddivpx);
+    var yoffset = this.y % griddivpx;
+    var ystart  = Math.trunc(-this.y / griddivpx);
+
+    for (var i = 0; i * griddivpx < this.ctx.canvas.width; i++) {
+      var div = xstart + i;
+      var weight = 1;
+      var x = xoffset + i * griddivpx;
+      if (div == 0) {
+        weight = this.grid.axisWeight;
+      } else if (div % this.grid.subDiv == 0) {
+        weight = this.grid.weight;
+      } else {
+        weight = this.grid.subWeight;
+      }
+      this.ctx.line(x,0,x,this.ctx.canvas.height,this.grid.color,weight);
+    }
+
+    for (var i = 0; i * griddivpx < this.ctx.canvas.height; i++) {
+      var div = ystart + i;
+      var weight = 1;
+      var y = yoffset + i * griddivpx;
+      if (div == 0) {
+        weight = this.grid.axisWeight;
+      } else if (div % this.grid.subDiv == 0) {
+        weight = this.grid.weight;
+      } else {
+        weight = this.grid.subWeight;
+      }
+      this.ctx.line(0,y,this.ctx.canvas.width,y,this.grid.color,weight);
+    }
+  }
+  getTranslatedCoords(x, y) {
+    var x = (x - this.x) / this.unit * this.zoom;
+    var y = (y - this.y) / this.unit * this.zoom;
+    return [x, -y];
+  }
+
+}
+var graph = null;
 var body = $(document.body);
 var canvas = null;
 var mainCtx = null;
 var gx, gy
-var zoom        = 1.0;
-var gridSpacing = 100;
-var subDiv      = 5;
-var gridDivider = 1.0;
-var gridDark    = "#99f";
-var gridLight   = "#99f";
-var unit        = 10;
-
-var axisWeight = 3;
-var gridWeight = 1.5;
-var subWeight  = 0.5;
-
-var getTranslatedCoords = function(x, y) {
-  var x = (x - gx) / unit * zoom;  
-  var y = (y - gy) / unit * zoom;  
-  return [x, -y];
-}
 
 var mouse = {
   "mode" :   "none",
@@ -31,43 +100,8 @@ var mouse = {
 var resizeCanvas = function() {
   canvas[0].width = window.innerWidth - 10;
   canvas[0].height = window.innerHeight - 10;
-  drawGrid(mainCtx);
-}
-
-var drawGrid = function(ctx) {
-  ctx.clear();
-  var gridDivPx = gridSpacing / subDiv / zoom * gridDivider;
-  var xOffset = gx % gridDivPx;
-  var xStart  = Math.trunc(-gx / gridDivPx);
-  var yOffset = gy % gridDivPx;
-  var yStart  = Math.trunc(-gy / gridDivPx);
-
-  for (var i = 0; i * gridDivPx < canvas[0].width; i++) {
-    var div = xStart + i;
-    var weight = 1;
-    var x = xOffset + i * gridDivPx;
-    if (div == 0) {
-      weight = axisWeight;
-    } else if (div % subDiv == 0) {
-      weight = gridWeight;
-    } else {
-      weight = subWeight;
-    }
-    ctx.line(x,0,x,ctx.canvas.height,gridLight,weight);
-  }
-
-  for (var i = 0; i * gridDivPx < canvas[0].height; i++) {
-    var div = yStart + i;
-    var weight = 1;
-    var y = yOffset + i * gridDivPx;
-    if (div == 0) {
-      weight = axisWeight;
-    } else if (div % subDiv == 0) {
-      weight = gridWeight;
-    } else {
-      weight = subWeight;
-    }
-    ctx.line(0,y,ctx.canvas.width,y,gridLight,weight);
+  if (graph) {
+    graph.draw();
   }
 }
 
@@ -76,7 +110,7 @@ var vAdd = function(v1, v2) {
   for (var i = 0; i < v1.length || i < v2.length; i++) {
     if (i >= v1.length) v1[i] = 0;
     if (i >= v2.length) v2[i] = 0;
-    out[i] = v1[i] + v2[i]; 
+    out[i] = v1[i] + v2[i];
   }
   return out;
 }
@@ -86,7 +120,7 @@ var vSub = function(v1, v2) {
   for (var i = 0; i < v1.length || i < v2.length; i++) {
     if (i >= v1.length) v1[i] = 0;
     if (i >= v2.length) v2[i] = 0;
-    out[i] = v1[i] - v2[i]; 
+    out[i] = v1[i] - v2[i];
   }
   return out;
 }
@@ -97,11 +131,11 @@ var vMult = function(v1, v2) {
     for (var i = 0; i < v1.length || i < v2.length; i++) {
       if (i >= v1.length) v1[i] = 0;
       if (i >= v2.length) v2[i] = 0;
-      out[i] = v1[i] * v2[i]; 
+      out[i] = v1[i] * v2[i];
     }
   } else {
     for (var i = 0; i < v1.length; i++) {
-      out[i] = v1[i] * v2; 
+      out[i] = v1[i] * v2;
     }
   }
   return out;
@@ -113,35 +147,14 @@ var vDiv = function(v1, v2) {
     for (var i = 0; i < v1.length || i < v2.length; i++) {
       if (i >= v1.length) v1[i] = 0;
       if (i >= v2.length) v2[i] = 0;
-      out[i] = v1[i] / v2[i]; 
+      out[i] = v1[i] / v2[i];
     }
   } else {
     for (var i = 0; i < v1.length; i++) {
-      out[i] = v1[i] / v2; 
+      out[i] = v1[i] / v2;
     }
   }
   return out;
-}
-
-
-var changeZoom = function(change, x, y) {
-  if (x == null || y == null) {
-    x = 0;
-    y = 0;
-  }
-  currentGraphCoords = getTranslatedCoords(x, y);
-  currentPixelCoords = [x, y];
-  zoom *= (1 + (change / 100.0));
-  gridDivider = 1.0;
-  while (gridSpacing / subDiv / zoom * gridDivider < 10.0) {
-    gridDivider *= 10;
-  }
-  newGraphCoords = getTranslatedCoords(x, y);
-  graphCoordDiff = vSub(currentGraphCoords, newGraphCoords);
-  graphCoordDiffScaled = vMult(graphCoordDiff, unit / zoom);
-  gx = gx - graphCoordDiffScaled[0];
-  gy = gy + graphCoordDiffScaled[1];
-  drawGrid(mainCtx);
 }
 
 var canvasMove = function(e) {
@@ -150,20 +163,20 @@ var canvasMove = function(e) {
     return;
   }
   if (mouse.mode == "scroll") {
-    gx = e.pageX - mouse.startX;
-    gy = e.pageY - mouse.startY;
-    drawGrid(mainCtx);
+    graph.x = e.pageX - mouse.startX;
+    graph.y = e.pageY - mouse.startY;
+    graph.draw();
   } else if (mouse.mode == "zoom") {
     var zChange = mouse.lastY - e.pageY;
     mouse.lastY = e.pageY;
-    changeZoom(zChange, mouse.startX, mouse.startY);
+    graph.changeZoom(zChange, mouse.startX, mouse.startY);
   }
 }
 
 var canvasDown = function(e) {
   if (e.which == 2 || e.button == 4 || e.ctrlKey) {
-    mouse.startX = e.pageX - gx;
-    mouse.startY = e.pageY - gy;
+    mouse.startX = e.pageX - graph.x;
+    mouse.startY = e.pageY - graph.y;
     mouse.mode = "scroll";
   } else if (e.shiftKey) {
     mouse.startX = e.pageX;
@@ -178,7 +191,7 @@ var canvasUp = function(e) {
 }
 
 var wheel = function(e) {
-  changeZoom(-e.wheelDelta / 10.0, e.x, e.y);
+  graph.changeZoom(-e.wheelDelta / 10.0, e.x, e.y);
 
 }
 
@@ -192,8 +205,10 @@ var injectCanvas = function() {
   resizeCanvas();
   gx = canvas[0].width  / 2;
   gy = canvas[0].height / 2;
+  graph = new Graph(mainCtx, gx, gy);
   body.append(canvas);
-  drawGrid(mainCtx);
+  graph.draw();
+  //drawGrid(mainCtx);
 }
 
 CanvasRenderingContext2D.prototype.line = function(x1,y1,x2,y2,color,weight) {
