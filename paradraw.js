@@ -23,7 +23,9 @@ var getTranslatedCoords = function(x, y) {
 var mouse = {
   "mode" :   "none",
   "startX" : 0,
-  "startY" : 0
+  "startY" : 0,
+  "lastX" : 0,
+  "lastY" : 0
 };
 
 var resizeCanvas = function() {
@@ -66,23 +68,6 @@ var drawGrid = function(ctx) {
       weight = subWeight;
     }
     ctx.line(0,y,ctx.canvas.width,y,gridLight,weight);
-  }
-}
-
-var canvasMouse = function(e) {
-  console.log(getTranslatedCoords(e.pageX, e.pageY));
-  if (e.buttons == 0) {
-    canvasUp();
-    return;
-  }
-  if (mouse.mode == "scroll") {
-    gx = e.pageX - mouse.startX;
-    gy = e.pageY - mouse.startY;
-    drawGrid(mainCtx);
-  } else if (mouse.mode == "zoom") {
-    var zChange = mouse.startY - e.pageY;
-    mouse.startY = e.pageY;
-    changeZoom(zChange);
   }
 }
 
@@ -138,7 +123,6 @@ var vDiv = function(v1, v2) {
   return out;
 }
 
-console.log(vDiv([2,4,6],2));
 
 var changeZoom = function(change, x, y) {
   if (x == null || y == null) {
@@ -160,13 +144,31 @@ var changeZoom = function(change, x, y) {
   drawGrid(mainCtx);
 }
 
+var canvasMove = function(e) {
+  if (e.buttons == 0) {
+    canvasUp();
+    return;
+  }
+  if (mouse.mode == "scroll") {
+    gx = e.pageX - mouse.startX;
+    gy = e.pageY - mouse.startY;
+    drawGrid(mainCtx);
+  } else if (mouse.mode == "zoom") {
+    var zChange = mouse.lastY - e.pageY;
+    mouse.lastY = e.pageY;
+    changeZoom(zChange, mouse.startX, mouse.startY);
+  }
+}
+
 var canvasDown = function(e) {
   if (e.which == 2 || e.button == 4 || e.ctrlKey) {
     mouse.startX = e.pageX - gx;
     mouse.startY = e.pageY - gy;
     mouse.mode = "scroll";
   } else if (e.shiftKey) {
+    mouse.startX = e.pageX;
     mouse.startY = e.pageY;
+    mouse.lastY = e.pageY;
     mouse.mode = "zoom";
   }
 }
@@ -182,7 +184,7 @@ var wheel = function(e) {
 
 var injectCanvas = function() {
   canvas = $('<canvas id="canvas" class="mainCanvas"/>');
-  canvas.mousemove(canvasMouse);
+  canvas.mousemove(canvasMove);
   canvas.mousedown(canvasDown);
   canvas.mouseup(canvasUp);
   canvas[0].addEventListener('mousewheel', wheel, false);
